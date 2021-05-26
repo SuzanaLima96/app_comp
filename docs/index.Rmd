@@ -1,0 +1,585 @@
+---
+title: "Validação Cruzada"
+author: "Sandro Lucena e Suzana de Lima"
+date: "Maio, 2021"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: ["ufba"]
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r xaringan-panelset, echo=FALSE}
+xaringanExtra::use_panelset()
+xaringanExtra::use_scribble()
+xaringanExtra::use_tachyons()
+```
+
+class: middle
+
+.center[
+# Estrutura
+]
+
+- Base utilizada
+
+- Aplicações
+
+    - Holdout
+    
+    - Holdout repetido
+    
+    - Leave-one-out
+    
+    - k-fold
+    
+    - k-fold repetido
+    
+    - Bootstrap
+    
+- Atividade
+
+---
+class: middle, center, inverse
+
+# Base utilizada
+
+---
+class: middle
+
+.center[
+# Iris
+]
+
+- O conjunto de dados Iris contém quatro características (comprimento e largura das sépalas e pétalas) de 50 amostras de três espécies de Iris (Iris setosa, Iris virginica e Iris versicolor)
+
+- Essas medidas foram usadas para criar um modelo discriminante linear para classificar as espécies.
+
+
+---
+class: middle
+
+.center[
+# Iris
+]
+
+- As variáveis são 
+  
+  1. Sepal.Length: Comprimento da sépala em cm
+  
+  2. Sepal.Width: Largura da sépala em cm
+  
+  3. Petal.Length: Comprimento da pétala em cm
+  
+  4. Petal.Width: Largura da pétala em cm
+  
+  5. Species: classe
+  
+       - Iris Setosa
+    
+       - Iris Versicolour
+    
+       - Iris Virginica
+
+---
+class: middle
+
+.center[
+# Iris
+]
+
+![Descrição da base](iris.png)
+
+---
+class: middle, center, inverse
+
+# Pacotes utilizados
+
+---
+class: middle
+
+.center[
+# Caret
+]
+
+- **C**lassification **A**nd **Re**gression **T**raining,  Max Kuhn;
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+require(caret)
+```
+
+- O pacote contém ferramentas para:
+
+    - Divisão de dados
+    
+    - Pré-processamento
+    
+    - Feature selection (seleção de recursos) 
+    
+    - **Ajuste de modelo usando métodos de validação cruzada**
+    
+    - Estimação
+    
+---
+class: middle
+
+.center[
+# Caret
+]
+
+
+- Funções utilizadas
+
+    - *createDataPartition*: Usada para criar uma amostra aleatória estratificada dos dados em conjuntos de treinamento e teste
+    
+    - *trainControl*: Onde fixa o método de validação cruzada
+    
+        - *method*: "boot", "cv", "LOOCV", "LGOCV", "repeatedcv", "timeslice", "none" e "oob"
+        
+        - *number* e *repeats*: usado para controla número de partes e quantas vezes repetir
+    
+    - *train*: Usada para treinar o modelo
+    
+        - *form*: Fórmula do modelo
+        
+        - *data*: Conjunto de dados 
+        
+        - *trControl*: médoto de validação
+        
+        - *method*: Classificação ou regressão desejada
+
+---
+class: middle
+
+.center[
+# Caret
+]
+
+
+- Funções utilizadas
+
+    - confusionMatrix: Extrair as métricas de avaliação
+        
+        - Matriz de confusão
+        
+        - Acurácia
+        
+        - Índice Kappa
+        
+        - Sensibilidade
+        
+        - ...
+        
+---
+class: middle
+
+.center[
+# Outros pacotes
+]
+
+
+- ggplot2: Visualização de dados
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+require(ggplot2)
+```
+
+- gridExtra: editar a janela gráfica
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+require(gridExtra)
+```
+
+- nnet: Função *multinom*
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+require(nnet)
+```
+
+---
+class: middle, center, inverse
+
+# Descritiva da base de dados
+
+---
+class: middle
+
+.center[
+# Comprimento da Sépala e Pétala
+]
+
+.panelset[
+.panel[.panel-name[R Code]
+
+```{r panel-chunk, fig.show='hide'}
+x <- ggplot(data=iris, aes(x=Species, y=Sepal.Length))+
+  geom_boxplot(aes(fill=Species))+
+    guides(fill=guide_legend(title="Espécie"))+
+  xlab("Espécie") +  
+  ylab("Comprimento da sépala") +
+  theme_classic()+
+  theme(legend.position = "none")
+
+y <- ggplot(data=iris, aes(x=Species, y=Petal.Length))+
+  geom_boxplot(aes(fill=Species))+
+  guides(fill=guide_legend(title="Espécie"))+
+  xlab("Espécie") +  
+  ylab("Comprimento da pétala") +
+  theme_classic()+
+  theme(legend.position = "none")
+
+grid.arrange(x,y,ncol=2)
+```
+]
+
+.panel[.panel-name[Plot]
+
+```{r echo=FALSE, fig.align='center'}
+grid.arrange(x,y,ncol=2)
+```
+
+]
+]
+
+---
+class: middle
+
+.center[
+# Largura da Sépala e Pétala
+]
+
+.panelset[
+.panel[.panel-name[R Code]
+
+```{r panel-chunk1, fig.show='hide'}
+x <- ggplot(data=iris, aes(x=Species, y=Sepal.Width))+
+  geom_boxplot(aes(fill=Species))+
+    guides(fill=guide_legend(title="Espécie"))+
+  xlab("Espécie") +  
+  ylab("Largura da sépala") +
+  theme_classic()+
+  theme(legend.position = "none")
+
+y <- ggplot(data=iris, aes(x=Species, y=Petal.Width))+
+  geom_boxplot(aes(fill=Species))+
+  guides(fill=guide_legend(title="Espécie"))+
+  xlab("Espécie") +  
+  ylab("Largura da pétala") +
+  theme_classic()+
+  theme(legend.position = "none")
+
+grid.arrange(x,y,ncol=2)
+```
+]
+
+.panel[.panel-name[Plot]
+
+```{r echo=FALSE, fig.align='center'}
+grid.arrange(x,y,ncol=2)
+```
+
+]
+]
+
+---
+class: middle, center, inverse
+
+# Métodos
+
+---
+class: middle
+
+.center[
+# Holdout
+]
+
+- Dividindo a base de dados
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+indices <- createDataPartition(iris$Species, p = .75, list = FALSE) 
+Train <- iris[indices,]
+Test <- iris[-indices,]
+```
+
+- Pré-processamento
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+Train$Species <- factor(Train$Species)
+Test$Species <- factor(Test$Species)
+```
+
+- Modelo
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+model_h <- multinom(Species~., data = Train, trace = FALSE)
+```
+
+---
+class: middle
+
+.center[
+# Holdout
+]
+
+- Valores preditos
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+Predict <- predict(model_h, Test)
+table(Predict)
+```
+
+- Matriz de confusão
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+cm <- confusionMatrix(Predict,Test$Species)
+cm$table
+```
+
+- Acurácia
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+round(cm$overall[1]*100,2)
+```
+
+---
+class: middle
+
+.center[
+# Holdout repetido
+]
+
+- Utilizando trainControl
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+train_control <- trainControl(method="cv", repeats = 5)
+```
+
+- Modelo
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+model_hr <- train(Species~., data=iris, trControl=train_control, method="multinom", trace=FALSE)
+```
+
+---
+class: middle
+
+.center[
+# Holdout repetido
+]
+
+- Valores preditos
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+Predict <- predict(model_hr, Test)
+table(Predict)
+```
+
+- Matriz de confusão
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+cm <- confusionMatrix(Predict,Test$Species)
+cm$table
+```
+
+- Acurácia
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+round(cm$overall[1]*100,2)
+```
+
+---
+class: middle
+
+.center[
+# Leave-one-out 
+]
+
+- Utilizando trainControl
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+train_control <- trainControl(method="LOOCV")
+```
+
+- Modelo
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+model_loa <- train(Species~., data=iris, trControl=train_control, method="multinom", trace=FALSE)
+```
+
+---
+class: middle
+
+.center[
+# Leave-one-out 
+]
+
+- Valores preditos
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+Predict <- predict(model_loa, Test)
+table(Predict)
+```
+
+- Matriz de confusão
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+cm <- confusionMatrix(Predict,Test$Species)
+cm$table
+```
+
+- Acurácia
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+round(cm$overall[1]*100,2)
+```
+
+---
+class: middle
+
+.center[
+# k-fold
+]
+
+- Utilizando trainControl
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+train_control <- trainControl(method="cv", number=10)
+```
+
+- Modelo
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+model_k <- train(Species~., data=iris, trControl=train_control, method="multinom", trace=FALSE)
+```
+
+---
+class: middle
+
+.center[
+# k-fold
+]
+
+- Valores preditos
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+Predict <- predict(model_k, Test)
+table(Predict)
+```
+
+- Matriz de confusão
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+cm <- confusionMatrix(Predict,Test$Species)
+cm$table
+```
+
+- Acurácia
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+round(cm$overall[1]*100,2)
+```
+
+---
+class: middle
+
+.center[
+# k-fold repetido
+]
+
+- Utilizando trainControl
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
+```
+
+- Modelo
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+model_kr <- train(Species~., data=iris, trControl=train_control, method="multinom", trace=FALSE)
+```
+
+---
+class: middle
+
+.center[
+# k-fold repetido
+]
+
+- Valores preditos
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+Predict <- predict(model_kr, Test)
+table(Predict)
+```
+
+- Matriz de confusão
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+cm <- confusionMatrix(Predict,Test$Species)
+cm$table
+```
+
+- Acurácia
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+round(cm$overall[1]*100,2)
+```
+
+---
+class: middle
+
+.center[
+# Bootstrap
+]
+
+- Utilizando trainControl
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+train_control <- trainControl(method="boot", number=100)
+```
+
+- Modelo
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+model_b <- train(Species~., data=iris, trControl=train_control, method="multinom", trace=FALSE)
+```
+
+---
+class: middle
+
+.center[
+# Bootstrap
+]
+
+- Valores preditos
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+Predict <- predict(model_b, Test)
+table(Predict)
+```
+
+- Matriz de confusão
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+cm <- confusionMatrix(Predict,Test$Species)
+cm$table
+```
+
+- Acurácia
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+round(cm$overall[1]*100,2)
+```
+
+---
+class: middle
+
+.center[
+# Atividade
+]
+
+- Utilizar a base de dados *mtcars*, fazer uma regressão linear simples *mpg ~ cyl* aplicar os métodos e avaliar.
+
